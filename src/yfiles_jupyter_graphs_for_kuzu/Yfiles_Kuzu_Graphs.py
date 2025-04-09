@@ -1,9 +1,9 @@
 """Jupyter (ipy)widget powered by yFiles.
 
-The main Neo4jGraphWidget class is defined in this module.
+The main KuzuGraphWidget class is defined in this module.
 
 """
-from typing import Any, Callable, Dict, Union, Type, Optional, List
+from typing import Any, Callable, Dict, Union, Optional, List, Tuple
 from types import FunctionType, MethodType
 import inspect
 
@@ -14,23 +14,24 @@ from yfiles_jupyter_graphs import GraphWidget
 POSSIBLE_NODE_BINDINGS = {'coordinate', 'color', 'size', 'type', 'styles', 'scale_factor', 'position',
                           'layout', 'property', 'label'}
 POSSIBLE_EDGE_BINDINGS = {'color', 'thickness_factor', 'styles', 'property', 'label'}
-NEO4J_LABEL_KEYS = ['name', 'title', 'text', 'description', 'caption', 'label']
+COLOR_PALETTE = ['#2196F3', '#4CAF50', '#F44336', '#607D8B', '#673AB7', '#CDDC39', '#9E9E9E', '#9C27B0']
+KUZU_LABEL_KEYS = ['name', 'title', 'text', 'description', 'caption', 'label']
 
-class Neo4jGraphWidget:
+class KuzuGraphWidget:
     """
-    A yFiles Graphs for Jupyter widget that is tailored to visualize Cypher queries resolved against a Neo4j database.
+    A yFiles Graphs for Jupyter widget that is tailored to visualize Cypher queries resolved against a Kuzu database.
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, driver: Optional[Any] = None, widget_layout: Optional[Any] = None,
+    def __init__(self, connection: Optional[Any] = None, widget_layout: Optional[Any] = None,
                  overview_enabled: Optional[bool] = None, context_start_with: Optional[str] = None,
                  license: Optional[Dict] = None,
                  autocomplete_relationships: Optional[bool] = False, layout: Optional[str] = 'organic'):
         """
-        Initializes a new instance of the Neo4jGraphWidget class.
+        Initializes a new instance of the KuzuGraphWidget class.
 
         Args:
-            driver (Optional[neo4j._sync.driver.Neo4jDriver]): The Neo4j driver to resolve the Cypher queries.
+            connection (Optional[kuzu connection type]): The Kuzu connection to resolve the Cypher queries.
             widget_layout (Optional[ipywidgets.Layout]): Can be used to specify general widget appearance through css attributes.
                 See ipywidgets documentation for the available keywords.
             overview_enabled (Optional[bool]): Whether the graph overview is enabled or not.
@@ -54,8 +55,7 @@ class Neo4jGraphWidget:
         """
 
         self._widget = GraphWidget()
-        self._driver = driver
-        self._session = driver.session()
+        self._connection = connection
         self._license = license
         self._overview = overview_enabled
         self._layout = widget_layout
@@ -67,33 +67,35 @@ class Neo4jGraphWidget:
         self._edge_configurations = {}
         self._parent_configurations = set()
 
-    def set_driver(self, driver: Any) -> None:
+        # a mapping of node/edge types to a color, e.g. item types are automatically mapped to
+        # different colors
+        self._itemtype2colorIdx = {}
+
+    def set_connection(self, connection: Any) -> None:
         """
-        The Neo4j driver that is used to resolve the Cypher queries. A new session is created when set.
+        The Kuzu connection that is used to resolve the Cypher queries. A new session is created when set.
 
         Args:
-            driver (neo4j._sync.driver.Neo4jDriver): The Neo4j driver to resolve the Cypher queries.
+            connection: The Kuzu connection to resolve the Cypher queries.
 
         Returns:
             None
         """
-        self._driver = driver
-        self._session = driver.session()
+        self._connection = connection
 
-    def get_driver(self) -> Any:
+    def get_connection(self) -> Any:
         """
-        Gets the configured Neo4j driver.
+        Gets the configured Kuzu connection.
 
         Returns:
-            neo4j._sync.driver.Neo4jDriver
+            kuzu connection
         """
-        return self._driver
+        return self._connection
 
     def set_autocomplete_relationships(self, autocomplete_relationships: Union[bool, str, list[str]]) -> None:
         """
         Sets the flag to enable or disable autocomplete for relationships.
-        When autocomplete is enabled, relationships are automatically completed in the graph,
-        similar to the behavior in Neo4j Browser.
+        When autocomplete is enabled, relationships are automatically completed in the graph.
         This can be set to True/False to enable or disable for all relationships,
         or a single relationship type or a list of relationship types to enable for specific relationships.
 
@@ -120,6 +122,112 @@ class Neo4jGraphWidget:
         if isinstance(self._autocomplete_relationships, list) and len(self._autocomplete_relationships) > 0:
             return "AND type(rel) IN $relationship_types"
         return ""
+
+    @staticmethod
+    def _parse_query_result(query_result: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """
+        Parse a Kuzu graph database query result DataFrame into nodes and relationships.
+
+        Args:
+            df: DataFrame containing query results with node and relationship columns
+
+        Returns:
+            Tuple containing (nodes, relationships) as lists of dictionaries
+        """
+
+        df = query_result.get_as_df()
+
+        node_map = {}
+        relationship_map = {}
+        table_to_label_dict = {}
+        table_primary_key_dict = {}
+
+        # Helper functions
+        def encode_node_id(node: dict[str, Any], table_primary_key_dict: dict[str, Any]) -> str:
+            node_label = node["_label"]
+            return f"{node_label}_{node[table_primary_key_dict[node_label]]!s}"
+
+        def encode_rel_id(rel: dict[str, Any]) -> tuple[int, int]:
+            return rel["_id"]["table"], rel["_id"]["offset"]
+
+        # Process each row in the dataframe
+        for _, row in df.iterrows():
+            for col in row.index:
+                # Skip empty values
+                if row[col] is None or row[col] == {}:
+                    continue
+
+                value = row[col]
+
+                # Process nodes
+                if isinstance(value, dict) and "_label" in value and "_id" in value and not ("_src" in value and "_dst" in value):
+                    _id = value["_id"]
+                    node_map[(_id["table"], _id["offset"])] = value
+                    table_to_label_dict[_id["table"]] = value["_label"]
+
+                # Process relationships
+                elif isinstance(value, dict) and "_label" in value and "_src" in value and "_dst" in value:
+                    # Remove None values from the relationship
+                    for key in list(value.keys()):
+                        if value[key] is None:
+                            del value[key]
+
+                    relationship_map[encode_rel_id(value)] = value
+
+        # Get primary keys for node labels
+        for node in node_map.values():
+            node_label = node["_label"]
+            if node_label not in table_primary_key_dict:
+                # Just use the first non-underscore property as primary key
+                # This is a simplified approach since we don't have access to _connection
+                for key in node:
+                    if not key.startswith('_'):
+                        table_primary_key_dict[node_label] = key
+                        break
+
+        # Convert nodes to the result format
+        result_nodes = []
+        for node in node_map.values():
+            node_id = encode_node_id(node, table_primary_key_dict)
+            result_nodes.append({
+                "id": node_id,
+                "properties": {
+                    "label": node["_label"],
+                    **{k: v for k, v in node.items() if not k.startswith('_')}
+                }
+            })
+
+        # Convert relationships to the result format
+        result_relationships = []
+        for rel in relationship_map.values():
+            _src = rel["_src"]
+            _dst = rel["_dst"]
+            src_node = node_map[(_src["table"], _src["offset"])]
+            dst_node = node_map[(_dst["table"], _dst["offset"])]
+            src_id = encode_node_id(src_node, table_primary_key_dict)
+            dst_id = encode_node_id(dst_node, table_primary_key_dict)
+
+            table, offset = encode_rel_id(rel)
+            rel_id = f"{table}_{offset}"
+            result_relationships.append({
+                "id": rel_id,
+                "start": src_id,
+                "end": dst_id,
+                "properties": {
+                    "label": rel["_label"],
+                    **{k: v for k, v in rel.items() if not k.startswith('_')}
+                }
+            })
+
+        return result_nodes, result_relationships
+
+    def _default_color_mapping(self, element: Dict):
+        itemtype = element['properties']['label']
+        if itemtype not in self._itemtype2colorIdx:
+            self._itemtype2colorIdx[itemtype] = len(self._itemtype2colorIdx)
+
+        color_index = self._itemtype2colorIdx[itemtype] % len(COLOR_PALETTE)
+        return COLOR_PALETTE[color_index]
 
     def show_cypher(self, cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> None:
         """
@@ -148,10 +256,12 @@ class Neo4jGraphWidget:
         Raises:
             Exception: If no driver was specified.
         """
-        if self._driver is not None:
+        if self._connection is not None:
             if self._is_autocomplete_enabled():
-                nodes = self._session.run(cypher, **kwargs).graph().nodes
-                node_ids = [node.element_id for node in nodes]
+                # TODO adjust to kuzu
+                query_result = self._connection.execute(cypher)
+                nodes = self._parse_query_result(query_result)
+                node_ids = [node.id for node in nodes]
                 reltypes_expr = self._get_relationship_types_expression()
                 cypher = f"""
                     MATCH (n) WHERE elementId(n) IN $node_ids
@@ -167,8 +277,13 @@ class Neo4jGraphWidget:
                 if reltypes_expr:
                     kwargs["relationship_types"] = self._autocomplete_relationships
             widget = GraphWidget(overview_enabled=self._overview, context_start_with=self._context_start_with,
-                                 widget_layout=self._layout, license=self._license,
-                                 graph=self._session.run(cypher, **kwargs).graph())
+                                 widget_layout=self._layout, license=self._license)
+
+            query_result = self._connection.execute(cypher)
+            nodes, edges = self._parse_query_result(query_result)
+            widget.nodes = nodes
+            widget.edges = edges
+
             self.__create_group_nodes(self._node_configurations, widget)
             self.__apply_node_mappings(widget)
             self.__apply_edge_mappings(widget)
@@ -187,9 +302,9 @@ class Neo4jGraphWidget:
             raise Exception("no driver specified")
 
     @staticmethod
-    def __get_neo4j_item_text(element: Dict) -> Union[str, None]:
+    def __get_item_text(element: Dict) -> Union[str, None]:
         lowercase_element_props = {key.lower(): value for key, value in element.get('properties', {}).items()}
-        for key in NEO4J_LABEL_KEYS:
+        for key in KUZU_LABEL_KEYS:
             if key in lowercase_element_props:
                 return str(lowercase_element_props[key])
         return None
@@ -217,7 +332,7 @@ class Neo4jGraphWidget:
         """
 
         def mapping(index: int, item: Dict) -> Union[Dict, str]:
-            label = item["properties"]["label"]  # yjg stores the neo4j node/relationship type in properties["label"]
+            label = item["properties"]["label"]  # yjg stores the kuzu node/relationship type in properties["label"]
             if ((label in configurations or '*' in configurations)
                     and binding_key in configurations.get(label, configurations.get('*'))):
                 type_configuration = configurations.get(label, configurations.get('*'))
@@ -246,7 +361,7 @@ class Neo4jGraphWidget:
                 return result
 
             if binding_key == "label":
-                return Neo4jGraphWidget.__get_neo4j_item_text(item)
+                return KuzuGraphWidget.__get_item_text(item)
             else:
                 # call default mapping
                 # some default mappings do not support "index" as first parameter
@@ -260,7 +375,7 @@ class Neo4jGraphWidget:
 
     def __apply_heat_mapping(self, configuration, widget: GraphWidget) -> None:
         setattr(widget, "_heat_mapping",
-                Neo4jGraphWidget.__configuration_mapper_factory('heat', configuration,
+                KuzuGraphWidget.__configuration_mapper_factory('heat', configuration,
                                                                 getattr(widget, 'default_heat_mapping')))
 
     def __create_group_nodes(self, configurations, widget: GraphWidget) -> None:
@@ -316,19 +431,19 @@ class Neo4jGraphWidget:
 
     def __apply_node_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_NODE_BINDINGS:
-            default_mapping = getattr(widget, f"default_node_{key}_mapping")
+            default_mapping = self._default_color_mapping if key == "color" else getattr(widget, f"default_node_{key}_mapping")
             setattr(widget, f"_node_{key}_mapping",
-                    Neo4jGraphWidget.__configuration_mapper_factory(key, self._node_configurations, default_mapping))
+                    KuzuGraphWidget.__configuration_mapper_factory(key, self._node_configurations, default_mapping))
         # manually set parent configuration
         setattr(widget, f"_node_parent_mapping",
-                Neo4jGraphWidget.__configuration_mapper_factory('parent_configuration',
+                KuzuGraphWidget.__configuration_mapper_factory('parent_configuration',
                                                                 self._node_configurations, lambda node: None))
 
     def __apply_edge_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_EDGE_BINDINGS:
-            default_mapping = getattr(widget, f"default_edge_{key}_mapping")
+            default_mapping = self._default_color_mapping if key == "color" else getattr(widget, f"default_edge_{key}_mapping")
             setattr(widget, f"_edge_{key}_mapping",
-                    Neo4jGraphWidget.__configuration_mapper_factory(key, self._edge_configurations, default_mapping))
+                    KuzuGraphWidget.__configuration_mapper_factory(key, self._edge_configurations, default_mapping))
 
     def add_node_configuration(self, label: Union[str, list[str]], **kwargs: Dict[str, Any]) -> None:
         """
@@ -426,9 +541,9 @@ class Neo4jGraphWidget:
         """
         if isinstance(label, list):
             for l in label:
-                Neo4jGraphWidget.__safe_delete_configuration(l, self._node_configurations)
+                KuzuGraphWidget.__safe_delete_configuration(l, self._node_configurations)
         else:
-            Neo4jGraphWidget.__safe_delete_configuration(label, self._node_configurations)
+            KuzuGraphWidget.__safe_delete_configuration(label, self._node_configurations)
 
     # noinspection PyShadowingBuiltins
     def del_relationship_configuration(self, type: Union[str, list[str]]) -> None:
@@ -443,9 +558,9 @@ class Neo4jGraphWidget:
         """
         if isinstance(type, list):
             for t in type:
-                Neo4jGraphWidget.__safe_delete_configuration(t, self._edge_configurations)
+                KuzuGraphWidget.__safe_delete_configuration(t, self._edge_configurations)
         else:
-            Neo4jGraphWidget.__safe_delete_configuration(type, self._edge_configurations)
+            KuzuGraphWidget.__safe_delete_configuration(type, self._edge_configurations)
 
     @staticmethod
     def __safe_delete_configuration(key: str, configurations: Dict[str, Any]) -> None:
@@ -473,36 +588,6 @@ class Neo4jGraphWidget:
             self._parent_configurations = {
                 rel_type for rel_type in self._parent_configurations if rel_type[0] != type
             }
-
-    def get_selected_node_ids(self, widget: Optional[Type["Neo4jGraphWidget"]] = None) -> List[str]:
-        """
-        Returns the list of node ids that are currently selected in the most recently shown widget, or in the given `widget`.
-
-        Args:
-            widget (Optional[Type["Neo4jGraphWidget"]]): The widget from which the selected ids should be retrieved.
-                If not specified, the most recently shown widget will be used.
-
-        Returns:
-            List[str]: The list of node ids currently selected in the widget.
-        """
-        graph = widget if widget is not None else self._widget
-        nodes, edges = graph.get_selection()
-        return list(map(lambda node: node['id'], nodes))
-
-    def get_selected_relationship_ids(self, widget: Optional[Type["Neo4jGraphWidget"]] = None) -> List[str]:
-        """
-        Returns the list of relationship ids that are currently selected in the most recently shown widget, or in the given `widget`.
-
-        Args:
-            widget (Optional[Type["Neo4jGraphWidget"]]): The widget from which the selected ids should be retrieved.
-                If not specified, the most recently shown widget will be used.
-
-        Returns:
-            List[str]: The list of relationship ids currently selected in the widget.
-        """
-        graph = widget if widget is not None else self._widget
-        nodes, edges = graph.get_selection()
-        return list(map(lambda edge: edge['id'], edges))
 
     def get_node_cell_mapping(self) -> Union[str, Callable, None]:
         """

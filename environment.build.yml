@@ -1,4 +1,4 @@
-name: yfiles_jupyter_graphs_for_neo4j_build
+name: yjg-for-x-build
 channels:
   - conda-forge
 dependencies:

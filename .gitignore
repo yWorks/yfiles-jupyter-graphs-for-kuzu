@@ -2,4 +2,7 @@ dist
 node_modules
 .ipynb_checkpoints
 .idea
-/src/yfiles_jupyter_graphs_for_neo4j.egg-info/
+/src/yfiles_jupyter_graphs_for_kuzu.egg-info/
+movies-db-csv/
+_db_*/
+*.csv

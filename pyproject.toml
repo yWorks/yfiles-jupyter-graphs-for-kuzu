@@ -1,10 +1,10 @@
 [project]
-name = "yfiles_jupyter_graphs_for_neo4j"
-version = "1.7.0"
+name = "yfiles_jupyter_graphs_for_kuzu"
+version = "0.0.1"
 authors = [
   {name = "yWorks Support Team", email= "yfileshtml@yworks.com"},
 ]
-description = "A Neo4j graph visualization package that uses the yfiles-jupyter-graphs widget"
+description = "A Kuzu graph visualization package that uses the yfiles-jupyter-graphs widget"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -22,14 +22,15 @@ classifiers = [
 ]
 license = {file = "LICENSE.md"}
 dependencies = [
-  "yfiles_jupyter_graphs>=1.10.0"
+  "yfiles_jupyter_graphs>=1.10.0",
+  "pandas>=1.0.0"
 ]
 
 [project.urls]
-License = "https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/LICENSE.md"
-"Bug Tracker" = "https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/issues"
-Documentation = "https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/"
-Repository = "https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j.git"
+License = "https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/LICENSE.md"
+"Bug Tracker" = "https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/issues"
+Documentation = "https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/"
+Repository = "https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu.git"
 
 [build-system]
 requires = ["setuptools>=61.0"]

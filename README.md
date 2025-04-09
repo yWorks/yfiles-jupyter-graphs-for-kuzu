@@ -1,39 +1,39 @@
-# yFiles Jupyter Graphs for Neo4j
-![A screenshot showing the yFiles graph widget for neo4j in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-neo4j/main/images/example.png)
+# yFiles Jupyter Graphs for Kuzu
+![A screenshot showing the yFiles graph widget for Kuzu in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/main/images/example.png)
 
-[![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-neo4j.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-neo4j)
+[![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu)
 
-Easily visualize a [Neo4j](https://neo4j.com/) Cypher query as a graph in a Jupyter Notebook.
+Easily visualize a [Kuzu](https://kuzudb.com/) database with as a graph in a Jupyter Notebook.
 
 This packages provides an easy-to-use interface to
 the [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs) widget to directly visualize Cypher
 queries.
 
 ## Installation
-Just install it from the [Python Package Index](https://pypi.org/project/yfiles-jupyter-graphs-for-neo4j/)
+Just install it from the [Python Package Index](https://pypi.org/project/yfiles-jupyter-graphs-for-kuzu/)
 ```bash
-pip install yfiles_jupyter_graphs_for_neo4j
+pip install yfiles_jupyter_graphs_for_kuzu
 ```
-or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/README_DEV.md) to build it yourself.
+or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/README_DEV.md) to build it yourself.
 
 ## Usage
 
 ```python
-from yfiles_jupyter_graphs_for_neo4j import Neo4jGraphWidget
-from neo4j import GraphDatabase
+import kuzu
+from yfiles_jupyter_graphs_for_kuzu import KuzuGraphWidget
 
-NEO4J_URI      = "neo4j+ssc://demo.neo4jlabs.com" 
-NEO4J_USERNAME = "movies"
-NEO4J_PASSWORD = "movies"
-driver = GraphDatabase.driver(uri = NEO4J_URI, auth = (NEO4J_USERNAME, NEO4J_PASSWORD), database = 'movies')
+db_path = '<path-to-db>'
 
-g = Neo4jGraphWidget(driver)
+db = kuzu.Database(db_path)
+conn = kuzu.Connection(db)
+
+g = KuzuGraphWidget(conn)
 
 g.show_cypher("MATCH (s)-[r]->(t) RETURN s,r,t LIMIT 20")
 ```
 
 See
-the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/basic_example.ipynb)
+the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/basic_example.ipynb)
 for a running example.
 
 ## Supported Environments
@@ -43,18 +43,18 @@ see [supported environments](https://github.com/yWorks/yfiles-jupyter-graphs/tre
 
 ## Documentation
 
-The main class `Neo4jGraphWidget` provides the following API:
+The main class `KuzuGraphWidget` provides the following API:
 
 ### Constructor
 
-- `Neo4jGraphWidget`: Creates a new class instance with the following arguments
+- `KuzuGraphWidget`: Creates a new class instance with the following arguments
 
-| Argument           | Description                                                                                                                                                                                                                                        | Default   |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
-| `driver`           | The neo4j `driver` that is used to execute Cypher queries.                                                                                                                                                                                         | `None`    |
-| `widget_layout`    | Can be used to specify general widget appearance through css attributes. See ipywidget's [`layout`](https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Layout.html#the-layout-attribute) for more information.                          | `None`    |
-| `overview_enabled` | Enable graph overview component. Default behaviour depends on cell width.                                                                                                                                                                          | `None`    |
-| `context_start_with` | Start with a specific side-panel opened in the interactive widget. Starts with closed side-panel by default.                                                                                                                                                                          | `None`    |
+| Argument           | Description                                                                                                                                                                                                                                 | Default   |
+|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| `driver`           | The Kuzu `driver` that is used to execute Cypher queries.                                                                                                                                                                                   | `None`    |
+| `widget_layout`    | Can be used to specify general widget appearance through css attributes. See ipywidget's [`layout`](https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Layout.html#the-layout-attribute) for more information.                   | `None`    |
+| `overview_enabled` | Enable graph overview component. Default behaviour depends on cell width.                                                                                                                                                                   | `None`    |
+| `context_start_with` | Start with a specific side-panel opened in the interactive widget. Starts with closed side-panel by default.                                                                                                                                | `None`    |
 | `layout`     | Can be used to specify a general default node and edge layout. Available algorithms are: "circular", "hierarchic", "organic", "interactive_organic", "orthogonal", "radial", "tree", "map", "orthogonal_edge_router", "organic_edge_router" | `organic` |
 
 ### Methods 
@@ -75,18 +75,16 @@ The main class `Neo4jGraphWidget` provides the following API:
         - `orthogonal_edge_router`
         - `organic_edge_router`
     - `**kwargs (Dict[str, Any])`: Additional parameters that should be passed to the Cypher query (e.g., see
-      the [selection example](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/selection_example.ipynb)).
+      the [selection example](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/selection_example.ipynb)).
 
 The default behavior is to only show the nodes and relationships returned by the Cypher query.
-This can be changed to autocomplete relationships like in neo4j browser:
-- `set_autocomplete_relationships(autocomplete_relationships: Union[bool, str, list[str]]) -> None`: Sets whether to autocomplete relationships in the graph or not.
 
-The Cypher queries are executed by the provided Neo4j driver. If you have not specified a driver when instantiating the
+The Cypher queries are executed by the provided Kuzu driver. If you have not specified a driver when instantiating the
 class, you can set
-a driver afterward:
+a connection afterward:
 
-- `set_driver(driver)`: Sets the Neo4j driver that is used to resolve the Cypher queries.
-- `get_driver()`: Returns the current Neo4j driver.
+- `set_connection(driver)`: Sets the Kuzu driver that is used to resolve the Cypher queries.
+- `get_connection()`: Returns the current Kuzu driver.
 
 The graph visualization can be adjusted by adding configurations to each node label or edge type with the following
 functions:
@@ -103,7 +101,7 @@ functions:
         - `type`: Defines a specific "type" for the node as described
           in [yFiles Graphs for Jupyter](https://yworks.github.io/yfiles-jupyter-graphs/02_graph_widget/#def-default_node_type_mappingindex-node)
           which affects the automatic positioning of nodes (same "type"s are preferred to be placed next to each other).
-        - `parent_configuration`: Configure grouping for this node label. See [grouping.ipynb](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/grouping.ipynb)
+        - `parent_configuration`: Configure grouping for this node label. See [grouping.ipynb](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/grouping.ipynb)
           for examples.
 
 - `add_relationship_configuration(type: Union[str, list[str]], **kwargs: Dict[str, Any]) -> None`
@@ -127,13 +125,13 @@ To remove a configuration use the following functions:
 
 You can select nodes and relationships to retrieve their ids. For example, you can use these ids in new Cypher queries
 by providing them as parameter to `show_cypher` as shown in
-the [selection example](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/selection_example.ipynb).
+the [selection example](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/selection_example.ipynb).
 
-- `get_selected_node_ids(widget: Optional[Type["Neo4jGraphWidget"]] = None) -> List[str]`: Returns an Array of node ids
+- `get_selected_node_ids(widget: Optional[Type["KuzuGraphWidget"]] = None) -> List[str]`: Returns an Array of node ids
     - `widget`: The widget that is used to select nodes from. If `None` is specified, the most recently shown widget is
       used.
     
-- `get_selected_relationship_ids(widget: Optional[Type["Neo4jGraphWidget"]] = None) -> List[str]`: Returns an Array of relationship ids
+- `get_selected_relationship_ids(widget: Optional[Type["KuzuGraphWidget"]] = None) -> List[str]`: Returns an Array of relationship ids
     - `widget`: The widget that is used to select edges from. If `None` is specified, the most recently shown widget is
       used.
 
@@ -169,16 +167,16 @@ the [example notebooks](https://github.com/yWorks/yfiles-jupyter-graphs/blob/mai
 
 <table>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-neo4j/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb">Heatmap visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-neo4j/refs/heads/main/images/features/map_feature.png" title="Geospatial data visualization" alt="Geospatial data visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb">Geospatial data visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb">Heatmap visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/map_feature.png" title="Geospatial data visualization" alt="Geospatial data visualization"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb">Geospatial data visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
     </tr>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-neo4j/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb">Data-driven item visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/grouping.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-neo4j/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/grouping.ipynb">Group items</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/examples/grouping.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb">Data-driven item visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/feature_example.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/grouping.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/grouping.ipynb">Group items</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/examples/grouping.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
     </tr>
 </table>
 
@@ -187,7 +185,7 @@ For a detailed feature guide, check out the main widget [example notebooks](http
 ## Code of Conduct
 
 This project and everyone participating in it is governed by
-the [Code of Conduct](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/CODE_OF_CONDUCT.md).
+the [Code of Conduct](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
 Please report unacceptable behavior to [contact@yworks.com](mailto:contact@yworks.com).
 
@@ -197,15 +195,15 @@ This widget is by no means perfect.
 If you find something is not working as expected
 we are glad to receive an issue report from you.
 Please make sure
-to [search for existing issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/search?q=is%3Aissue) first
+to [search for existing issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/search?q=is%3Aissue) first
 and check if the issue is not an unsupported feature or known issue.
 If you did not find anything related, report a new issue with necessary information.
 Please also provide a clear and descriptive title and stick to the issue templates.
-See [issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/issues).
+See [issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/issues).
 
 ## Dependencies
 
 * [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs)
 
 ## License
-See [LICENSE](https://github.com/yWorks/yfiles-jupyter-graphs-for-neo4j/blob/main/LICENSE.md) file.
+See [LICENSE](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/main/LICENSE.md) file.
