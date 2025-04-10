@@ -135,13 +135,13 @@ class KuzuGraphWidget:
                     continue
 
                 # Process nodes
-                if isinstance(value, dict) and "_label" in value and "_id" in value and not ("_src" in value and "_dst" in value):
+                if "_label" in value and "_id" in value and not ("_src" in value and "_dst" in value):
                     _id = value["_id"]
                     node_map[(_id["table"], _id["offset"])] = value
                     table_to_label_dict[_id["table"]] = value["_label"]
 
                 # Process relationships
-                elif isinstance(value, dict) and "_label" in value and "_src" in value and "_dst" in value:
+                elif "_label" in value and "_src" in value and "_dst" in value:
                     # Remove None values from the relationship
                     for key in list(value.keys()):
                         if value[key] is None:
@@ -150,7 +150,7 @@ class KuzuGraphWidget:
                     relationship_map[encode_rel_id(value)] = value
 
                 # Process recursive relationships and their associated nodes
-                elif isinstance(value, dict) and "_nodes" in value and "_rels" in value:
+                elif "_nodes" in value and "_rels" in value:
                     recursive_nodes = value["_nodes"]
                     for node in recursive_nodes:
                         _id = node["_id"]
