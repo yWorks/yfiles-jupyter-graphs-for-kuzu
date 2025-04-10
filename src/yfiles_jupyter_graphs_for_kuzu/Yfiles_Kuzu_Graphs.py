@@ -26,8 +26,7 @@ class KuzuGraphWidget:
     # noinspection PyShadowingBuiltins
     def __init__(self, connection: Optional[Any] = None, widget_layout: Optional[Any] = None,
                  overview_enabled: Optional[bool] = None, context_start_with: Optional[str] = None,
-                 license: Optional[Dict] = None,
-                 autocomplete_relationships: Union[bool, str, list[str]] = False, layout: Optional[str] = 'organic'):
+                 license: Optional[Dict] = None, layout: Optional[str] = 'organic'):
         """
         Initializes a new instance of the KuzuGraphWidget class.
 
@@ -39,7 +38,6 @@ class KuzuGraphWidget:
             context_start_with (Optional[str]): Start with a specific side-panel opened in the interactive widget. Starts with closed side-panel by default.
             license (Optional[Dict]): The widget works on common public domains without a specific license.
                 For unknown domains, a license can be obtained by the creators of the widget.
-            autocomplete_relationships (Optional[bool]): Whether missing relationships in the Cypher's return value are automatically added.
             layout (Optional[str]): Specifies the default automatic graph arrangement. Can be overwritten for each
                 cypher separately. By default, an "organic" layout is used. Supported values are:
                     - "circular"
@@ -61,7 +59,6 @@ class KuzuGraphWidget:
         self._overview = overview_enabled
         self._layout = widget_layout
         self._context_start_with = context_start_with
-        self.set_autocomplete_relationships(autocomplete_relationships)
         self._graph_layout = layout
 
         self._node_configurations = {}
@@ -92,37 +89,6 @@ class KuzuGraphWidget:
             kuzu connection
         """
         return self._connection
-
-    def set_autocomplete_relationships(self, autocomplete_relationships: Union[bool, str, list[str]]) -> None:
-        """
-        Sets the flag to enable or disable autocomplete for relationships.
-        When autocomplete is enabled, relationships are automatically completed in the graph.
-        This can be set to True/False to enable or disable for all relationships,
-        or a single relationship type or a list of relationship types to enable for specific relationships.
-
-        Args:
-            autocomplete_relationships (Union[bool, str, list[str]]): Enable autocompletion for relationships
-                in general, or for a single type, or for multiple types.
-
-        Returns:
-            None
-        """
-        if not isinstance(autocomplete_relationships, (bool, str, list)):
-            raise ValueError("autocomplete_relationships must be a bool, a string, or a list of strings")
-        if isinstance(autocomplete_relationships, str):
-            self._autocomplete_relationships = [autocomplete_relationships]
-        else:
-            self._autocomplete_relationships = autocomplete_relationships
-
-    def _is_autocomplete_enabled(self) -> bool:
-        if isinstance(self._autocomplete_relationships, bool):
-            return self._autocomplete_relationships
-        return len(self._autocomplete_relationships) > 0
-
-    def _get_relationship_types_expression(self) -> str:
-        if isinstance(self._autocomplete_relationships, list) and len(self._autocomplete_relationships) > 0:
-            return "AND type(rel) IN $relationship_types"
-        return ""
 
     def _parse_query_result(self, query_result: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
@@ -279,25 +245,6 @@ class KuzuGraphWidget:
             Exception: If no driver was specified.
         """
         if self._connection is not None:
-            if self._is_autocomplete_enabled():
-                # TODO adjust to kuzu
-                query_result = self._connection.execute(cypher)
-                nodes = self._parse_query_result(query_result)
-                node_ids = [node.id for node in nodes]
-                reltypes_expr = self._get_relationship_types_expression()
-                cypher = f"""
-                    MATCH (n) WHERE elementId(n) IN $node_ids
-                    RETURN n as start, NULL as rel, NULL as end
-                    UNION ALL
-                    MATCH (n)-[rel]-(m)
-                    WHERE elementId(n) IN $node_ids
-                    AND elementId(m) IN $node_ids
-                    {reltypes_expr}
-                    RETURN n as start, rel, m as end
-                """
-                kwargs = {"node_ids": node_ids}
-                if reltypes_expr:
-                    kwargs["relationship_types"] = self._autocomplete_relationships
             widget = GraphWidget(overview_enabled=self._overview, context_start_with=self._context_start_with,
                                  widget_layout=self._layout, license=self._license)
 
