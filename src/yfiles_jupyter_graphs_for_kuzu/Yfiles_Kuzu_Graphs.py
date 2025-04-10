@@ -6,6 +6,7 @@ The main KuzuGraphWidget class is defined in this module.
 from typing import Any, Callable, Dict, Union, Optional, List, Tuple
 from types import FunctionType, MethodType
 import inspect
+from datetime import date, datetime
 
 from yfiles_jupyter_graphs import GraphWidget
 
@@ -26,7 +27,7 @@ class KuzuGraphWidget:
     def __init__(self, connection: Optional[Any] = None, widget_layout: Optional[Any] = None,
                  overview_enabled: Optional[bool] = None, context_start_with: Optional[str] = None,
                  license: Optional[Dict] = None,
-                 autocomplete_relationships: Optional[bool] = False, layout: Optional[str] = 'organic'):
+                 autocomplete_relationships: Union[bool, str, list[str]] = False, layout: Optional[str] = 'organic'):
         """
         Initializes a new instance of the KuzuGraphWidget class.
 
@@ -123,25 +124,17 @@ class KuzuGraphWidget:
             return "AND type(rel) IN $relationship_types"
         return ""
 
-    @staticmethod
-    def _parse_query_result(query_result: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def _parse_query_result(self, query_result: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
         Parse a Kuzu graph database query result DataFrame into nodes and relationships.
 
         Args:
-            df: DataFrame containing query results with node and relationship columns
+            query_result: QueryResult generator from Kuzu that contains a list of query results
+            with node and relationship columns
 
         Returns:
             Tuple containing (nodes, relationships) as lists of dictionaries
         """
-
-        df = query_result.get_as_df()
-
-        node_map = {}
-        relationship_map = {}
-        table_to_label_dict = {}
-        table_primary_key_dict = {}
-
         # Helper functions
         def encode_node_id(node: dict[str, Any], table_primary_key_dict: dict[str, Any]) -> str:
             node_label = node["_label"]
@@ -150,14 +143,30 @@ class KuzuGraphWidget:
         def encode_rel_id(rel: dict[str, Any]) -> tuple[int, int]:
             return rel["_id"]["table"], rel["_id"]["offset"]
 
-        # Process each row in the dataframe
-        for _, row in df.iterrows():
-            for col in row.index:
-                # Skip empty values
-                if row[col] is None or row[col] == {}:
-                    continue
+        def clean_value(v: Any) -> Any:
+            if isinstance(v, (date, datetime)):
+                return v.isoformat()
+            return v
 
-                value = row[col]
+        if self._connection is None:
+            raise ValueError("No database connection provided. Initialize widget with a valid Kuzu connection.")
+
+        result = []
+        while query_result.has_next():  # type: ignore
+            result.append(query_result.get_next())  # type: ignore
+
+        node_map = {}
+        relationship_map = {}
+        table_to_label_dict = {}
+        table_primary_key_dict = {}
+
+        # Process each row in the result
+        for row in result:
+            # Each row is a list with values for s,r,t in order
+            for value in row:
+                # Skip empty values
+                if value is None or value == {}:
+                    continue
 
                 # Process nodes
                 if isinstance(value, dict) and "_label" in value and "_id" in value and not ("_src" in value and "_dst" in value):
@@ -174,26 +183,33 @@ class KuzuGraphWidget:
 
                     relationship_map[encode_rel_id(value)] = value
 
-        # Get primary keys for node labels
-        for node in node_map.values():
-            node_label = node["_label"]
-            if node_label not in table_primary_key_dict:
-                # Just use the first non-underscore property as primary key
-                # This is a simplified approach since we don't have access to _connection
-                for key in node:
-                    if not key.startswith('_'):
-                        table_primary_key_dict[node_label] = key
-                        break
-
         # Convert nodes to the result format
         result_nodes = []
         for node in node_map.values():
+            node_label = node["_label"]
+            # Get primary key for each node label using table info
+            node_tbl_info = self._connection.execute(f"CALL TABLE_INFO('{node_label}') RETURN *")
+            node_tbl_properties = []
+            while node_tbl_info.has_next():  # type: ignore
+                prop = node_tbl_info.get_next()  # type: ignore
+                if prop[-1] is True:
+                    # Kuzu enforces that every node table MUST have one and only one primary key, so
+                    # this `if` condition is guaranteed to be hit in all scenarios
+                    table_primary_key_dict[node_label] = prop[1]
+                    node_tbl_properties.append(prop[1])
+                    break
+
+            # Store the node results
             node_id = encode_node_id(node, table_primary_key_dict)
+            while node_tbl_info.has_next():  # type: ignore
+                prop = node_tbl_info.get_next()  # type: ignore
+                # Add all the remaining properties to the node table list
+                node_tbl_properties.append(prop[1])
             result_nodes.append({
                 "id": node_id,
                 "properties": {
                     "label": node["_label"],
-                    **{k: v for k, v in node.items() if not k.startswith('_')}
+                    **{k: clean_value(v) for k, v in node.items() if not k.startswith('_') and k in node_tbl_properties}
                 }
             })
 
@@ -207,15 +223,21 @@ class KuzuGraphWidget:
             src_id = encode_node_id(src_node, table_primary_key_dict)
             dst_id = encode_node_id(dst_node, table_primary_key_dict)
 
-            table, offset = encode_rel_id(rel)
-            rel_id = f"{table}_{offset}"
+            rel_tbl_info = self._connection.execute(f"CALL TABLE_INFO('{rel['_label']}') RETURN *")
+            rel_tbl_properties = []
+            while rel_tbl_info.has_next():  # type: ignore
+                prop = rel_tbl_info.get_next()  # type: ignore
+                rel_tbl_properties.append(prop[1])
+
+            _, offset = encode_rel_id(rel)   # The first value is the table id & isn't needed
+            rel_id = f"{src_node['_label']}_{dst_node['_label']}_{offset}"
             result_relationships.append({
                 "id": rel_id,
                 "start": src_id,
                 "end": dst_id,
                 "properties": {
                     "label": rel["_label"],
-                    **{k: v for k, v in rel.items() if not k.startswith('_')}
+                    **{k: clean_value(v) for k, v in rel.items() if not k.startswith('_') and k in rel_tbl_properties}
                 }
             })
 

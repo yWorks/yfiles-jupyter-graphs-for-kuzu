@@ -6,3 +6,4 @@ node_modules
 movies-db-csv/
 _db_*/
 *.csv
+*.egg-info
