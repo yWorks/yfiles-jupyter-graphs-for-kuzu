@@ -248,7 +248,7 @@ class KuzuGraphWidget:
             widget = GraphWidget(overview_enabled=self._overview, context_start_with=self._context_start_with,
                                  widget_layout=self._layout, license=self._license)
 
-            query_result = self._connection.execute(cypher)
+            query_result = self._connection.execute(cypher, **kwargs)
             nodes, edges = self._parse_query_result(query_result)
             widget.nodes = nodes
             widget.edges = edges
