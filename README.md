@@ -59,7 +59,7 @@ The main class `KuzuGraphWidget` provides the following API:
 
 ### Methods 
 
-- `show_cypher(cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> GraphWidget`
+- `show_cypher(cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> None`
     - `cypher (str)`: The [Cypher query](https://neo4j.com/docs/cypher-manual/current/introduction/) that should be
       visualized.
     - `layout (Optional[str])`: The graph layout that is used. This overwrites the general layout in this specific graph instance. The following arguments are supported:

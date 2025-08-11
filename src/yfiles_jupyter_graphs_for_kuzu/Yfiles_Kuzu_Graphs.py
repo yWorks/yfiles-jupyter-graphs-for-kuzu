@@ -6,6 +6,7 @@ The main KuzuGraphWidget class is defined in this module.
 from typing import Any, Callable, Dict, Union, Optional, List, Tuple
 import inspect
 from datetime import date, datetime
+import warnings
 
 from yfiles_jupyter_graphs import GraphWidget
 
@@ -78,7 +79,12 @@ class KuzuGraphWidget:
         Returns:
             None
         """
-        self._connection = connection
+        warnings.warn(
+            "set_connection() is deprecated. Use the 'connection' property instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.connection = connection
 
     def get_connection(self) -> Any:
         """
@@ -87,7 +93,32 @@ class KuzuGraphWidget:
         Returns:
             kuzu connection
         """
+        warnings.warn(
+            "get_connection() is deprecated. Use the 'connection' property instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.connection
+
+    @property
+    def connection(self) -> Any:
+        """The configured Kuzu connection.
+
+        Preferred Pythonic accessor to the underlying connection. Equivalent to get_connection().
+        """
         return self._connection
+
+    @connection.setter
+    def connection(self, value: Any) -> None:
+        """Sets the Kuzu connection used to resolve Cypher queries."""
+        self._connection = value
+
+    @property
+    def graph_widget(self) -> Optional[GraphWidget]:
+        """
+        Returns the most recent GraphWidget created by show_cypher(), or None if show_cypher() has not been called yet.
+        """
+        return self._widget
 
     def _parse_query_result(self, query_result: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
@@ -251,7 +282,7 @@ class KuzuGraphWidget:
         color_index = self._itemtype2colorIdx[itemtype] % len(COLOR_PALETTE)
         return COLOR_PALETTE[color_index]
 
-    def show_cypher(self, cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> GraphWidget:
+    def show_cypher(self, cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> None:
         """
         Displays the given Cypher query as interactive graph.
 
@@ -273,7 +304,7 @@ class KuzuGraphWidget:
             **kwargs (Dict[str, Any]): Additional parameters that should be passed to the Cypher query.
 
         Returns:
-            The GraphWidget instance that extends the DOMWidget of ipywidgets.
+            None
 
         Raises:
             Exception: If no driver was specified.
@@ -304,7 +335,6 @@ class KuzuGraphWidget:
 
             self._widget = widget
             widget.show()
-            return widget
         else:
             raise Exception("no driver specified")
 
@@ -596,37 +626,61 @@ class KuzuGraphWidget:
                 rel_type for rel_type in self._parent_configurations if rel_type[0] != type
             }
 
-    def get_node_cell_mapping(self) -> Union[str, Callable, None]:
+    @property
+    def node_cell_mapping(self) -> Union[str, Callable, None]:
         """
-        Returns the currently specified node cell mapping.
+        The currently specified node cell mapping.
 
-        Returns:
-            Union[str, Callable, None]: The currently specified node cell mapping.
+        This mapping is used by automatic layout algorithms. It should resolve to a
+        (row, column) tuple or be a callable that returns such a tuple for a node.
         """
         return self._node_cell_mapping if hasattr(self, '_node_cell_mapping') else None
 
-    def set_node_cell_mapping(self, node_cell_mapping: Union[str, Callable]) -> None:
-        """
-        Specify a node to cell mapping to fine-tune automatic layout algorithms. The mapping should resolve to a row,
-        column tuple that is used as a cell into which the node is placed.
-
-        Args:
-            node_cell_mapping (Union[str, Callable]): Specifies a node to cell mapping. Must resolve to a row, column tuple or None.
-
-        Returns:
-            None
-        """
+    @node_cell_mapping.setter
+    def node_cell_mapping(self, node_cell_mapping: Union[str, Callable]) -> None:
+        """Specify or update the node-to-cell mapping used by automatic layouts."""
         # noinspection PyAttributeOutsideInit
         self._node_cell_mapping = node_cell_mapping
 
-    def del_node_cell_mapping(self) -> None:
-        """
-        Deletes the node cell mapping.
-
-        Returns:
-             None
-        """
+    @node_cell_mapping.deleter
+    def node_cell_mapping(self) -> None:  # type: ignore[override]
+        """Delete the node-to-cell mapping if present."""
         if hasattr(self, '_node_cell_mapping'):
             delattr(self, '_node_cell_mapping')
 
-    node_cell_mapping = property(get_node_cell_mapping, set_node_cell_mapping, del_node_cell_mapping)
+    # Backwards-compatible wrappers (deprecated)
+    def get_node_cell_mapping(self) -> Union[str, Callable, None]:
+        """
+        Deprecated: Use the 'node_cell_mapping' property instead.
+        """
+        warnings.warn(
+            "get_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.node_cell_mapping
+
+    def set_node_cell_mapping(self, node_cell_mapping: Union[str, Callable]) -> None:
+        """
+        Deprecated: Use the 'node_cell_mapping' property instead.
+        """
+        warnings.warn(
+            "set_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.node_cell_mapping = node_cell_mapping
+
+    def del_node_cell_mapping(self) -> None:
+        """
+        Deprecated: Use the 'node_cell_mapping' property instead.
+        """
+        warnings.warn(
+            "del_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        try:
+            del self.node_cell_mapping
+        except AttributeError:
+            pass
