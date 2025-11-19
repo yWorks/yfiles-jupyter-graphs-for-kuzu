@@ -1,39 +1,39 @@
-# yFiles Jupyter Graphs for Kuzu
-![A screenshot showing the yFiles graph widget for Kuzu in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/kuzu/images/example.png)
+# yFiles Jupyter Graphs for RyuGraph
+![A screenshot showing the yFiles graph widget for RyuGraph in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/main/images/example.png)
 
-[![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu)
+[![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-ryugraph.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-ryugraph)
 
-Easily visualize a [Kuzu](https://kuzudb.com/) database as a graph in a Jupyter Notebook. Explore the [Kuzu integration guide](https://docs.kuzudb.com/visualization/third-party-integrations/yfiles/) for more details.
+Easily visualize a [RyuGraph](https://ryugraph.io/) database as a graph in a Jupyter Notebook.
 
 This packages provides an easy-to-use interface to
 the [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs) widget to directly visualize Cypher
 queries.
 
 ## Installation
-Just install it from the [Python Package Index](https://pypi.org/project/yfiles-jupyter-graphs-for-kuzu/)
+Just install it from the [Python Package Index](https://pypi.org/project/yfiles-jupyter-graphs-for-ryugraph/)
 ```bash
-pip install yfiles_jupyter_graphs_for_kuzu
+pip install yfiles_jupyter_graphs_for_ryugraph
 ```
-or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/README_DEV.md) to build it yourself.
+or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/README_DEV.md) to build it yourself.
 
 ## Usage
 
 ```python
-import kuzu
-from yfiles_jupyter_graphs_for_kuzu import KuzuGraphWidget
+import ryugraph
+from yfiles_jupyter_graphs_for_ryugraph import RyuGraphWidget
 
 db_path = '<path-to-db>'
 
-db = kuzu.Database(db_path)
-conn = kuzu.Connection(db)
+db = ryugraph.Database(db_path)
+conn = ryugraph.Connection(db)
 
-g = KuzuGraphWidget(conn)
+g = RyuGraphWidget(conn)
 
 g.show_cypher("MATCH (s)-[r]->(t) RETURN s,r,t LIMIT 20")
 ```
 
 See
-the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/introduction.ipynb)
+the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/introduction.ipynb)
 for a running example.
 
 ## Supported Environments
@@ -43,15 +43,15 @@ see [supported environments](https://github.com/yWorks/yfiles-jupyter-graphs/tre
 
 ## Documentation
 
-The main class `KuzuGraphWidget` provides the following API:
+The main class `RyuGraphWidget` provides the following API:
 
 ### Constructor
 
-- `KuzuGraphWidget`: Creates a new class instance with the following arguments
+- `RyuGraphWidget`: Creates a new class instance with the following arguments
 
 | Argument           | Description                                                                                                                                                                                                                                 | Default   |
 |--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
-| `driver`           | The Kuzu `driver` that is used to execute Cypher queries.                                                                                                                                                                                   | `None`    |
+| `connection`       | The RyuGraph `connection` that is used to execute Cypher queries.                                                                                                                                                                           | `None`    |
 | `widget_layout`    | Can be used to specify general widget appearance through css attributes. See ipywidget's [`layout`](https://ipywidgets.readthedocs.io/en/stable/examples/Widget%20Layout.html#the-layout-attribute) for more information.                   | `None`    |
 | `overview_enabled` | Enable graph overview component. Default behaviour depends on cell width.                                                                                                                                                                   | `None`    |
 | `context_start_with` | Start with a specific side-panel opened in the interactive widget. Starts with closed side-panel by default.                                                                                                                                | `None`    |
@@ -78,12 +78,12 @@ The main class `KuzuGraphWidget` provides the following API:
 
 The default behavior is to only show the nodes and relationships returned by the Cypher query.
 
-The Cypher queries are executed by the provided Kuzu driver. If you have not specified a driver when instantiating the
+The Cypher queries are executed by the provided RyuGraph connection. If you have not specified a connection when instantiating the
 class, you can set
 a connection afterward:
 
-- `set_connection(driver)`: Sets the Kuzu driver that is used to resolve the Cypher queries.
-- `get_connection()`: Returns the current Kuzu driver.
+- `set_connection(connection)`: Sets the RyuGraph connection that is used to resolve the Cypher queries.
+- `get_connection()`: Returns the current RyuGraph connection.
 
 The graph visualization can be adjusted by adding configurations to each node label or edge type with the following
 functions:
@@ -100,7 +100,7 @@ functions:
         - `type`: Defines a specific "type" for the node as described
           in [yFiles Graphs for Jupyter](https://yworks.github.io/yfiles-jupyter-graphs/02_graph_widget/#def-default_node_type_mappingindex-node)
           which affects the automatic positioning of nodes (same "type"s are preferred to be placed next to each other).
-        - `parent_configuration`: Configure grouping for this node label. See [features.ipynb](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb)
+        - `parent_configuration`: Configure grouping for this node label. See [features.ipynb](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb)
           for examples.
 
 - `add_relationship_configuration(type: Union[str, list[str]], **kwargs: Dict[str, Any]) -> None`
@@ -154,15 +154,15 @@ the [example notebooks](https://github.com/yWorks/yfiles-jupyter-graphs/blob/mai
 
 <table>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Heatmap visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
-        <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/map_feature.png" title="Geospatial data visualization" alt="Geospatial data visualization">Geospatial data visualization</td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb">Heatmap visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/refs/heads/main/images/features/map_feature.png" title="Geospatial data visualization" alt="Geospatial data visualization">Geospatial data visualization</td>
     </tr>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Data-driven item visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Group items</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb">Data-driven item visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting"></a>
+        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb">Group items</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
     </tr>
 </table>
 
@@ -171,7 +171,7 @@ For a detailed feature guide, check out the main widget [example notebooks](http
 ## Code of Conduct
 
 This project and everyone participating in it is governed by
-the [Code of Conduct](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/CODE_OF_CONDUCT.md).
+the [Code of Conduct](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
 Please report unacceptable behavior to [contact@yworks.com](mailto:contact@yworks.com).
 
@@ -181,15 +181,15 @@ This widget is by no means perfect.
 If you find something is not working as expected
 we are glad to receive an issue report from you.
 Please make sure
-to [search for existing issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/search?q=is%3Aissue) first
+to [search for existing issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/search?q=is%3Aissue) first
 and check if the issue is not an unsupported feature or known issue.
 If you did not find anything related, report a new issue with necessary information.
 Please also provide a clear and descriptive title and stick to the issue templates.
-See [issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/issues).
+See [issues](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/issues).
 
 ## Dependencies
 
 * [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs)
 
 ## License
-See [LICENSE](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/LICENSE.md) file.
+See [LICENSE](https://github.com/yWorks/yfiles-jupyter-graphs-for-ryugraph/blob/main/LICENSE.md) file.
