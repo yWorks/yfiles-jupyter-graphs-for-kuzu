@@ -1,9 +1,10 @@
-# yFiles Jupyter Graphs for Kuzu
+As of October 2025, the Kuzu project is stopped.  yFiles Jupyter Graphs for Kuzu works for the 2 forks of the project: Ladybug & Ryugraph
+# yFiles Jupyter Graphs for Kuzu - Ladybug & Ryugraph
 ![A screenshot showing the yFiles graph widget for Kuzu in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/kuzu/images/example.png)
 
 [![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu)
 
-Easily visualize a [Kuzu](https://kuzudb.com/) database as a graph in a Jupyter Notebook. Explore the [Kuzu integration guide](https://docs.kuzudb.com/visualization/third-party-integrations/yfiles/) for more details.
+Easily visualize a [Ladybug]([https://kuzudb.com/](https://ladybugdb.com/)) or (RuyGraph)[https://www.ryugraph.io/] database as a graph in a Jupyter Notebook. 
 
 This packages provides an easy-to-use interface to
 the [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs) widget to directly visualize Cypher
@@ -19,13 +20,20 @@ or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/
 ## Usage
 
 ```python
-import kuzu
+# unquote the graphdb module you use
+# import real_ladybug
+# import ryugraph
+
 from yfiles_jupyter_graphs_for_kuzu import KuzuGraphWidget
 
 db_path = '<path-to-db>'
 
-db = kuzu.Database(db_path)
-conn = kuzu.Connection(db)
+if "real_ladybug" in sys.modules:
+    db: real_ladybug.Database = real_ladybug.Database(db_path)
+    conn: real_ladybug.Connection = real_ladybug.Connection(db)
+else:
+    db: ryugraph.Database = ryugraph.Database(db_path)
+    conn: ryugraph.Connection = ryugraph.Connection(db)
 
 g = KuzuGraphWidget(conn)
 
@@ -33,8 +41,8 @@ g.show_cypher("MATCH (s)-[r]->(t) RETURN s,r,t LIMIT 20")
 ```
 
 See
-the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/introduction.ipynb)
-for a running example.
+the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/introduction.ipynb) for a running example.
+Also see [legacy Kuzu introduction example](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/introduction.ipynb).
 
 ## Supported Environments
 
