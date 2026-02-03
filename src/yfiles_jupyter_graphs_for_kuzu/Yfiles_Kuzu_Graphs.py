@@ -146,11 +146,12 @@ class KuzuGraphWidget:
         """
         # Helper functions
         def encode_node_id(node: dict[str, Any], table_primary_key_dict: dict[str, Any]) -> str:
-            node_label = node["_label"]
+            node_label = self._get_case_insensitive(node, "_label")
             return f"{node_label}_{node[table_primary_key_dict[node_label]]!s}"
 
         def encode_rel_id(rel: dict[str, Any]) -> tuple[int, int]:
-            return rel["_id"]["table"], rel["_id"]["offset"]
+            _id = self._get_case_insensitive(rel, "_id")
+            return _id["table"], _id["offset"]
 
         def clean_value(v: Any) -> Any:
             if isinstance(v, (date, datetime)):
@@ -178,22 +179,29 @@ class KuzuGraphWidget:
                     continue
 
                 # Process nodes
-                if "_label" in value and "_id" in value and not ("_src" in value and "_dst" in value):
+                _label = self._get_case_insensitive(value, "_label")
+                _id = self._get_case_insensitive(value, "_id")
+                _src = self._get_case_insensitive(value, "_src")
+                _dst = self._get_case_insensitive(value, "_dst")
+                _nodes = self._get_case_insensitive(value, "_nodes")
+                _rels = self._get_case_insensitive(value, "_rels")
+
+                if _label and _id and not (_src and _dst):
                     self._process_node(value, node_map, table_to_label_dict)
 
                 # Process relationships
-                elif "_label" in value and "_src" in value and "_dst" in value:
+                elif _label and _src and _dst:
                     # Remove None values from the relationship
                     self._remove_none_values(value)
                     relationship_map[encode_rel_id(value)] = value
 
                 # Process recursive relationships and their associated nodes
-                elif "_nodes" in value and "_rels" in value:
-                    recursive_nodes = value["_nodes"]
+                elif _nodes and _rels:
+                    recursive_nodes = _nodes
                     for node in recursive_nodes:
                         self._process_node(node, node_map, table_to_label_dict)
 
-                    recursive_rels = value["_rels"]
+                    recursive_rels = _rels
                     for rel in recursive_rels:
                         # Remove None values from the relationship
                         self._remove_none_values(rel)
@@ -202,7 +210,7 @@ class KuzuGraphWidget:
         # Convert nodes to the result format
         result_nodes = []
         for node in node_map.values():
-            node_label = node["_label"]
+            node_label = self._get_case_insensitive(node, "_label")
             # Get primary key for each node label using table info
             node_tbl_info = self._connection.execute(f"CALL TABLE_INFO('{node_label}') RETURN *")
             node_tbl_properties = []
@@ -224,7 +232,7 @@ class KuzuGraphWidget:
             result_nodes.append({
                 "id": node_id,
                 "properties": {
-                    "label": node["_label"],
+                    "label": node_label,
                     **{k: clean_value(v) for k, v in node.items() if not k.startswith('_') and k in node_tbl_properties}
                 }
             })
@@ -232,32 +240,46 @@ class KuzuGraphWidget:
         # Convert relationships to the result format
         result_relationships = []
         for rel in relationship_map.values():
-            _src = rel["_src"]
-            _dst = rel["_dst"]
+            _src = self._get_case_insensitive(rel, "_src")
+            _dst = self._get_case_insensitive(rel, "_dst")
             src_node = node_map[(_src["table"], _src["offset"])]
             dst_node = node_map[(_dst["table"], _dst["offset"])]
             src_id = encode_node_id(src_node, table_primary_key_dict)
             dst_id = encode_node_id(dst_node, table_primary_key_dict)
 
-            rel_tbl_info = self._connection.execute(f"CALL TABLE_INFO('{rel['_label']}') RETURN *")
+            rel_label = self._get_case_insensitive(rel, "_label")
+            rel_tbl_info = self._connection.execute(f"CALL TABLE_INFO('{rel_label}') RETURN *")
             rel_tbl_properties = []
             while rel_tbl_info.has_next():  # type: ignore
                 prop = rel_tbl_info.get_next()  # type: ignore
                 rel_tbl_properties.append(prop[1])
 
             _, offset = encode_rel_id(rel)   # The first value is the table id & isn't needed
-            rel_id = f"{src_node['_label']}_{dst_node['_label']}_{offset}"
+            src_label = self._get_case_insensitive(src_node, "_label")
+            dst_label = self._get_case_insensitive(dst_node, "_label")
+            rel_id = f"{src_label}_{dst_label}_{offset}"
             result_relationships.append({
                 "id": rel_id,
                 "start": src_id,
                 "end": dst_id,
                 "properties": {
-                    "label": rel["_label"],
+                    "label": rel_label,
                     **{k: clean_value(v) for k, v in rel.items() if not k.startswith('_') and k in rel_tbl_properties}
                 }
             })
 
         return result_nodes, result_relationships
+
+    def _get_case_insensitive(self, dictionary: Dict[str, Any], key: str) -> Any:
+        """
+        Get a value from a dictionary case-insensitively.
+        """
+        if key in dictionary:
+            return dictionary[key]
+        for k in dictionary:
+            if k.lower() == key.lower():
+                return dictionary[k]
+        return None
 
     def _process_node(self,
             node: Dict[str, Any],
@@ -272,9 +294,9 @@ class KuzuGraphWidget:
             node_map: The map to store nodes in
             table_to_label_dict: The dict mapping table IDs to labels
         """
-        _id = node["_id"]
+        _id = self._get_case_insensitive(node, "_id")
         node_map[(_id["table"], _id["offset"])] = node
-        table_to_label_dict[_id["table"]] = node["_label"]
+        table_to_label_dict[_id["table"]] = self._get_case_insensitive(node, "_label")
         
     def _remove_none_values(self, dictionary: Dict[str, Any]) -> None:
         """
