@@ -4,7 +4,7 @@ As of October 2025, the Kuzu project is stopped.  yFiles Jupyter Graphs for Kuzu
 
 [![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu)
 
-Easily visualize a [Ladybug]([https://kuzudb.com/](https://ladybugdb.com/)) or (RuyGraph)[https://www.ryugraph.io/] database as a graph in a Jupyter Notebook. 
+Easily visualize a [Ladybug](https://ladybugdb.com/) or [RuyGraph](https://www.ryugraph.io/) database as a graph in a Jupyter Notebook. 
 
 This packages provides an easy-to-use interface to
 the [yFiles Graphs for Jupyter](https://github.com/yWorks/yfiles-jupyter-graphs) widget to directly visualize Cypher
