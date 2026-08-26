@@ -19,13 +19,9 @@ or see [README_DEV.md](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/
 ## Usage
 
 ```python
-import kuzu
 from yfiles_jupyter_graphs_for_kuzu import KuzuGraphWidget
 
-db_path = '<path-to-db>'
-
-db = kuzu.Database(db_path)
-conn = kuzu.Connection(db)
+conn = <kuzu or ladybug database connection>
 
 g = KuzuGraphWidget(conn)
 
@@ -33,7 +29,7 @@ g.show_cypher("MATCH (s)-[r]->(t) RETURN s,r,t LIMIT 20")
 ```
 
 See
-the [basic example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/introduction.ipynb)
+the [ladybug example notebook](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/ladybug.ipynb)
 for a running example.
 
 ## Supported Environments
@@ -111,8 +107,7 @@ functions:
         - `type`: Defines a specific "type" for the node as described
           in [yFiles Graphs for Jupyter](https://yworks.github.io/yfiles-jupyter-graphs/02_graph_widget/#def-default_node_type_mappingindex-node)
           which affects the automatic positioning of nodes (same "type"s are preferred to be placed next to each other).
-        - `parent_configuration`: Configure grouping for this node label. See [features.ipynb](https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb)
-          for examples.
+        - `parent_configuration`: Configure grouping for this node label.
 
 - `add_relationship_configuration(type: Union[str, list[str]], **kwargs: Dict[str, Any]) -> None`
     - `type (Union[str, list[str]])`: The relationship type for which this configuration should be used. Supports `*` to address all types.
@@ -165,15 +160,12 @@ the [example notebooks](https://github.com/yWorks/yfiles-jupyter-graphs/blob/mai
 
 <table>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Heatmap visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/heat_feature.png" title="Heatmap visualization" alt="Heatmap visualization">Heatmap visualization</td>
         <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/map_feature.png" title="Geospatial data visualization" alt="Geospatial data visualization">Geospatial data visualization</td>
     </tr>
     <tr>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Data-driven item visualization</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
-        <td><a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting"></a>
-        <a href="https://github.com/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb">Group items</a><br><a target="_blank" href="https://colab.research.google.com/github/yWorks/yfiles-jupyter-graphs-for-kuzu/blob/kuzu/examples/features.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a></td>
+        <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/size_feature.png" title="Data-driven item visualization" alt="Data-driven item visualization">Data-driven item visualization</td>
+        <td><img src="https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/refs/heads/main/images/features/grouping_feature.png" title="Grouped items" alt="node nesting">Group items</td>
     </tr>
 </table>
 
