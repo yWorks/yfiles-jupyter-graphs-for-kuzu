@@ -1,6 +1,6 @@
 [project]
 name = "yfiles_jupyter_graphs_for_kuzu"
-version = "1.1.2"
+version = "2.0.0"
 authors = [
   {name = "yWorks Support Team", email= "yfileshtml@yworks.com"},
 ]
@@ -23,7 +23,7 @@ classifiers = [
 license = "MIT"
 license-files = ["LICENSE.md"]
 dependencies = [
-  "yfiles_jupyter_graphs>=1.10.9",
+  "yfiles_jupyter_graphs~=2.0",
 ]
 
 [project.urls]

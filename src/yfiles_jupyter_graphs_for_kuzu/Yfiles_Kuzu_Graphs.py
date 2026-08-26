@@ -4,7 +4,6 @@ The main KuzuGraphWidget class is defined in this module.
 
 """
 from typing import Any, Callable, Dict, Union, Optional, List, Tuple
-import inspect
 from datetime import date, datetime
 import warnings
 import logging
@@ -16,7 +15,6 @@ from yfiles_jupyter_graphs import GraphWidget
 POSSIBLE_NODE_BINDINGS = {'coordinate', 'color', 'size', 'type', 'styles', 'scale_factor', 'position',
                           'layout', 'property', 'label'}
 POSSIBLE_EDGE_BINDINGS = {'color', 'thickness_factor', 'styles', 'property', 'label'}
-COLOR_PALETTE = ['#2196F3', '#4CAF50', '#F44336', '#607D8B', '#673AB7', '#CDDC39', '#9E9E9E', '#9C27B0']
 KUZU_LABEL_KEYS = ['name', 'title', 'text', 'description', 'caption', 'label']
 
 class KuzuGraphWidget:
@@ -70,10 +68,6 @@ class KuzuGraphWidget:
         self._node_configurations = {}
         self._edge_configurations = {}
         self._parent_configurations = set()
-
-        # a mapping of node/edge types to a color, e.g. item types are automatically mapped to
-        # different colors
-        self._itemtype2colorIdx = {}
 
     def set_connection(self, connection: Any) -> None:
         """
@@ -309,14 +303,6 @@ class KuzuGraphWidget:
             if dictionary[key] is None:
                 del dictionary[key]
 
-    def _default_color_mapping(self, element: Dict):
-        itemtype = element['properties']['label']
-        if itemtype not in self._itemtype2colorIdx:
-            self._itemtype2colorIdx[itemtype] = len(self._itemtype2colorIdx)
-
-        color_index = self._itemtype2colorIdx[itemtype] % len(COLOR_PALETTE)
-        return COLOR_PALETTE[color_index]
-
     def show_cypher(self, cypher: str, layout: Optional[str] = None, **kwargs: Dict[str, Any]) -> None:
         """
         Displays the given Cypher query as interactive graph.
@@ -387,8 +373,8 @@ class KuzuGraphWidget:
         return None
 
     @staticmethod
-    def __configuration_mapper_factory(binding_key: str, configurations: Dict[str, Dict[str, str]],
-                                       default_mapping: Callable) -> Callable[[int, Dict], Union[Dict, str]]:
+    def __configuration_mapper_factory(binding_key: str,
+                                       configurations: Dict[str, Dict[str, str]]) -> Optional[Any]:
         """
         This is called once for each POSSIBLE_NODE_BINDINGS or POSSIBLE_EDGE_BINDINGS (as `binding_key` argument) and
         sets the returned mapping function for the `binding_key` on the core yFiles Graphs for Jupyter widget.
@@ -402,13 +388,14 @@ class KuzuGraphWidget:
                   "Person": { "color": "blue", ... },
                   "*": { "color": "gray", ... }
                 }
-            default_mapping (MethodType): A reference to the default binding of the yFiles Graphs for Jupyter core widget that should be used when the binding_key is not specified otherwise.
-
         Returns:
-            FunctionType: A mapping function that can used in the yFiles Graphs for Jupyter core widget.
+            Optional[Callable]: A mapping function or None when the core widget's default should be used.
         """
 
-        def mapping(index: int, item: Dict) -> Union[Dict, str]:
+        if not any(binding_key in configuration for configuration in configurations.values()):
+            return None
+
+        def mapping(index: int, item: Dict) -> Union[Dict, str, None]:
             label = item["properties"]["label"]  # yjg stores the kuzu node/relationship type in properties["label"]
             if ((label in configurations or '*' in configurations)
                     and binding_key in configurations.get(label, configurations.get('*'))):
@@ -439,21 +426,14 @@ class KuzuGraphWidget:
 
             if binding_key == "label":
                 return KuzuGraphWidget.__get_item_text(item)
-            else:
-                # call default mapping
-                # some default mappings do not support "index" as first parameter
-                parameters = inspect.signature(default_mapping).parameters
-                if len(parameters) > 1 and parameters[list(parameters)[0]].annotation == int:
-                    return default_mapping(index, item)
-                else:
-                    return default_mapping(item)
+
+            return None
 
         return mapping
 
     def __apply_heat_mapping(self, configuration, widget: GraphWidget) -> None:
-        setattr(widget, "_heat_mapping",
-                KuzuGraphWidget.__configuration_mapper_factory('heat', configuration,
-                                                                getattr(widget, 'default_heat_mapping')))
+        setattr(widget, "heat_mapping",
+                KuzuGraphWidget.__configuration_mapper_factory('heat', configuration))
 
     def __create_group_nodes(self, configurations, widget: GraphWidget) -> None:
         group_node_properties = set()
@@ -502,25 +482,24 @@ class KuzuGraphWidget:
 
         # use list comprehension to filter out the edges to automatically trigger model sync with the frontend
         widget.edges = [edge for edge in widget.edges if edge['id'] not in edge_ids_to_remove]
-        current_parent_mapping = getattr(widget, '_node_parent_mapping')
-        setattr(widget, "_node_parent_mapping",
+        current_parent_mapping = getattr(widget, 'node_parent_mapping', None)
+        if current_parent_mapping is None:
+            current_parent_mapping = lambda index, node: None
+        setattr(widget, "node_parent_mapping",
                 lambda index, node: node_to_parent.get(node['id'], current_parent_mapping(index, node)))
 
     def __apply_node_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_NODE_BINDINGS:
-            default_mapping = self._default_color_mapping if key == "color" else getattr(widget, f"default_node_{key}_mapping")
-            setattr(widget, f"_node_{key}_mapping",
-                    KuzuGraphWidget.__configuration_mapper_factory(key, self._node_configurations, default_mapping))
+            setattr(widget, f"node_{key}_mapping",
+                    KuzuGraphWidget.__configuration_mapper_factory(key, self._node_configurations))
         # manually set parent configuration
-        setattr(widget, f"_node_parent_mapping",
-                KuzuGraphWidget.__configuration_mapper_factory('parent_configuration',
-                                                                self._node_configurations, lambda node: None))
+        setattr(widget, "node_parent_mapping",
+                KuzuGraphWidget.__configuration_mapper_factory('parent_configuration', self._node_configurations))
 
     def __apply_edge_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_EDGE_BINDINGS:
-            default_mapping = self._default_color_mapping if key == "color" else getattr(widget, f"default_edge_{key}_mapping")
-            setattr(widget, f"_edge_{key}_mapping",
-                    KuzuGraphWidget.__configuration_mapper_factory(key, self._edge_configurations, default_mapping))
+            setattr(widget, f"edge_{key}_mapping",
+                    KuzuGraphWidget.__configuration_mapper_factory(key, self._edge_configurations))
 
     def add_node_configuration(self, label: Union[str, list[str]], **kwargs: Dict[str, Any]) -> None:
         """
