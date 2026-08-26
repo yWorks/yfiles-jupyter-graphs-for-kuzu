@@ -12,10 +12,10 @@ from yfiles_jupyter_graphs import GraphWidget
 
 # TODO maybe change to get dynamically when adding bindings
 
-POSSIBLE_NODE_BINDINGS = {'coordinate', 'color', 'size', 'type', 'styles', 'scale_factor', 'position',
-                          'layout', 'property', 'label'}
-POSSIBLE_EDGE_BINDINGS = {'color', 'thickness_factor', 'styles', 'property', 'label'}
-KUZU_LABEL_KEYS = ['name', 'title', 'text', 'description', 'caption', 'label']
+POSSIBLE_NODE_BINDINGS = {"coordinate", "color", "size", "type", "styles", "scale_factor", "position",
+                          "layout", "property", "label"}
+POSSIBLE_EDGE_BINDINGS = {"color", "thickness_factor", "styles", "property", "label"}
+KUZU_LABEL_KEYS = ["name", "title", "text", "description", "caption", "label"]
 
 class KuzuGraphWidget:
     """
@@ -25,7 +25,7 @@ class KuzuGraphWidget:
     # noinspection PyShadowingBuiltins
     def __init__(self, connection: Optional[Any] = None, widget_layout: Optional[Any] = None,
                  overview_enabled: Optional[bool] = None, context_start_with: Optional[str] = None,
-                 license: Optional[Dict] = None, layout: Optional[str] = 'organic'):
+                 license: Optional[Dict] = None, layout: Optional[str] = "organic"):
         """
         Initializes a new instance of the KuzuGraphWidget class.
 
@@ -41,7 +41,7 @@ class KuzuGraphWidget:
                 cypher separately. By default, an "organic" layout is used. Supported values are:
                     - "circular"
                     - "circular_straight_line"
-                    - "hierarchic"
+                    - "hierarchical"
                     - "organic"
                     - "interactive_organic"
                     - "orthogonal"
@@ -80,7 +80,7 @@ class KuzuGraphWidget:
             None
         """
         warnings.warn(
-            "set_connection() is deprecated. Use the 'connection' property instead.",
+            "set_connection() is deprecated. Use the \"connection\" property instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -94,7 +94,7 @@ class KuzuGraphWidget:
             kuzu connection
         """
         warnings.warn(
-            "get_connection() is deprecated. Use the 'connection' property instead.",
+            "get_connection() is deprecated. Use the \"connection\" property instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -227,7 +227,7 @@ class KuzuGraphWidget:
                 "id": node_id,
                 "properties": {
                     "label": node_label,
-                    **{k: clean_value(v) for k, v in node.items() if not k.startswith('_') and k in node_tbl_properties}
+                    **{k: clean_value(v) for k, v in node.items() if not k.startswith("_") and k in node_tbl_properties}
                 }
             })
 
@@ -258,7 +258,7 @@ class KuzuGraphWidget:
                 "end": dst_id,
                 "properties": {
                     "label": rel_label,
-                    **{k: clean_value(v) for k, v in rel.items() if not k.startswith('_') and k in rel_tbl_properties}
+                    **{k: clean_value(v) for k, v in rel.items() if not k.startswith("_") and k in rel_tbl_properties}
                 }
             })
 
@@ -313,7 +313,7 @@ class KuzuGraphWidget:
                 specified when initializing the class. Supported values are:
                     - "circular"
                     - "circular_straight_line"
-                    - "hierarchic"
+                    - "hierarchical"
                     - "organic"
                     - "interactive_organic"
                     - "orthogonal"
@@ -366,7 +366,7 @@ class KuzuGraphWidget:
 
     @staticmethod
     def __get_item_text(element: Dict) -> Union[str, None]:
-        lowercase_element_props = {key.lower(): value for key, value in element.get('properties', {}).items()}
+        lowercase_element_props = {key.lower(): value for key, value in element.get("properties", {}).items()}
         for key in KUZU_LABEL_KEYS:
             if key in lowercase_element_props:
                 return str(lowercase_element_props[key])
@@ -397,20 +397,20 @@ class KuzuGraphWidget:
 
         def mapping(index: int, item: Dict) -> Union[Dict, str, None]:
             label = item["properties"]["label"]  # yjg stores the kuzu node/relationship type in properties["label"]
-            if ((label in configurations or '*' in configurations)
-                    and binding_key in configurations.get(label, configurations.get('*'))):
-                type_configuration = configurations.get(label, configurations.get('*'))
-                if binding_key == 'parent_configuration':
+            if ((label in configurations or "*" in configurations)
+                    and binding_key in configurations.get(label, configurations.get("*"))):
+                type_configuration = configurations.get(label, configurations.get("*"))
+                if binding_key == "parent_configuration":
                     # the binding may be a lambda that must be resolved first
                     binding = type_configuration.get(binding_key)
                     if callable(binding):
                         binding = binding(item)
                     # parent_configuration binding may either resolve to a dict or a string
                     if isinstance(binding, dict):
-                        group_label = binding.get('text', '')
+                        group_label = binding.get("text", "")
                     else:
                         group_label = binding
-                    result = 'GroupNode' + group_label
+                    result = "GroupNode" + group_label
                 # mapping
                 elif callable(type_configuration[binding_key]):
                     result = type_configuration[binding_key](item)
@@ -433,14 +433,14 @@ class KuzuGraphWidget:
 
     def __apply_heat_mapping(self, configuration, widget: GraphWidget) -> None:
         setattr(widget, "heat_mapping",
-                KuzuGraphWidget.__configuration_mapper_factory('heat', configuration))
+                KuzuGraphWidget.__configuration_mapper_factory("heat", configuration))
 
     def __create_group_nodes(self, configurations, widget: GraphWidget) -> None:
         group_node_properties = set()
         group_node_values = set()
-        key = 'parent_configuration'
+        key = "parent_configuration"
         for node in widget.nodes:
-            label = node['properties']['label']
+            label = node["properties"]["label"]
             if label in configurations and key in configurations.get(label):
                 group_node = configurations.get(label).get(key)
 
@@ -455,13 +455,13 @@ class KuzuGraphWidget:
                         group_node_values.add(group_node)
                 else:
                     # dictionary with values
-                    text = group_node.get('text', '')
+                    text = group_node.get("text", "")
                     group_node_values.add(text)
-                    configuration = {k: v for k, v in group_node.items() if k != 'text'}
+                    configuration = {k: v for k, v in group_node.items() if k != "text"}
                     self.add_node_configuration(text, **configuration)
 
         for group_label in group_node_properties.union(group_node_values):
-            node = {'id': 'GroupNode' + group_label, 'properties': {'label': group_label}}
+            node = {"id": "GroupNode" + group_label, "properties": {"label": group_label}}
             widget.nodes = [*widget.nodes, node]
 
     def __apply_parent_mapping(self, widget: GraphWidget) -> None:
@@ -471,22 +471,22 @@ class KuzuGraphWidget:
             rel_type = edge["properties"]["label"]
             for (parent_type, is_reversed) in self._parent_configurations:
                 if rel_type == parent_type:
-                    start = edge['start']  # child node id
-                    end = edge['end']  # parent node id
+                    start = edge["start"]  # child node id
+                    end = edge["end"]  # parent node id
                     if is_reversed:
                         node_to_parent[end] = start
                     else:
                         node_to_parent[start] = end
-                    edge_ids_to_remove.add(edge['id'])
+                    edge_ids_to_remove.add(edge["id"])
                     break
 
         # use list comprehension to filter out the edges to automatically trigger model sync with the frontend
-        widget.edges = [edge for edge in widget.edges if edge['id'] not in edge_ids_to_remove]
-        current_parent_mapping = getattr(widget, 'node_parent_mapping', None)
+        widget.edges = [edge for edge in widget.edges if edge["id"] not in edge_ids_to_remove]
+        current_parent_mapping = getattr(widget, "node_parent_mapping", None)
         if current_parent_mapping is None:
             current_parent_mapping = lambda index, node: None
         setattr(widget, "node_parent_mapping",
-                lambda index, node: node_to_parent.get(node['id'], current_parent_mapping(index, node)))
+                lambda index, node: node_to_parent.get(node["id"], current_parent_mapping(index, node)))
 
     def __apply_node_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_NODE_BINDINGS:
@@ -494,7 +494,7 @@ class KuzuGraphWidget:
                     KuzuGraphWidget.__configuration_mapper_factory(key, self._node_configurations))
         # manually set parent configuration
         setattr(widget, "node_parent_mapping",
-                KuzuGraphWidget.__configuration_mapper_factory('parent_configuration', self._node_configurations))
+                KuzuGraphWidget.__configuration_mapper_factory("parent_configuration", self._node_configurations))
 
     def __apply_edge_mappings(self, widget: GraphWidget) -> None:
         for key in POSSIBLE_EDGE_BINDINGS:
@@ -512,7 +512,7 @@ class KuzuGraphWidget:
                 - `text` (Union[str, Callable]): The text to be displayed on the node. By default, the node's label is used.
                 - `color` (Union[str, Callable]): A convenience color binding for the node (see also styles kwarg).
                 - `size` (Union[str, Callable]): The size of the node.
-                - `styles` (Union[Dict, Callable]): A dictionary that may contain the following attributes color, shape (one of 'ellipse', ' hexagon', 'hexagon2', 'octagon', 'pill', 'rectangle', 'round-rectangle' or 'triangle'), image.
+                - `styles` (Union[Dict, Callable]): A dictionary that may contain the following attributes color, shape (one of "ellipse", " hexagon", "hexagon2", "octagon", "pill", "rectangle", "round-rectangle" or "triangle"), image.
                 - `property` (Union[Dict, Callable]): Allows to specify additional properties on the node, which may be bound by other bindings.
                 - `type` (Union[Dict, Callable]): Defines a specific "type" for the node which affects the automatic positioning of nodes (same "type"s are preferred to be placed next to each other).
                 - `parent_configuration` (Union[str, Callable]): Configure grouping for this node label.
@@ -653,7 +653,7 @@ class KuzuGraphWidget:
         This mapping is used by automatic layout algorithms. It should resolve to a
         (row, column) tuple or be a callable that returns such a tuple for a node.
         """
-        return self._node_cell_mapping if hasattr(self, '_node_cell_mapping') else None
+        return self._node_cell_mapping if hasattr(self, "_node_cell_mapping") else None
 
     @node_cell_mapping.setter
     def node_cell_mapping(self, node_cell_mapping: Union[str, Callable]) -> None:
@@ -664,16 +664,16 @@ class KuzuGraphWidget:
     @node_cell_mapping.deleter
     def node_cell_mapping(self) -> None:  # type: ignore[override]
         """Delete the node-to-cell mapping if present."""
-        if hasattr(self, '_node_cell_mapping'):
-            delattr(self, '_node_cell_mapping')
+        if hasattr(self, "_node_cell_mapping"):
+            delattr(self, "_node_cell_mapping")
 
     # Backwards-compatible wrappers (deprecated)
     def get_node_cell_mapping(self) -> Union[str, Callable, None]:
         """
-        Deprecated: Use the 'node_cell_mapping' property instead.
+        Deprecated: Use the "node_cell_mapping" property instead.
         """
         warnings.warn(
-            "get_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            "get_node_cell_mapping() is deprecated. Use the \"node_cell_mapping\" property instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -681,10 +681,10 @@ class KuzuGraphWidget:
 
     def set_node_cell_mapping(self, node_cell_mapping: Union[str, Callable]) -> None:
         """
-        Deprecated: Use the 'node_cell_mapping' property instead.
+        Deprecated: Use the "node_cell_mapping" property instead.
         """
         warnings.warn(
-            "set_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            "set_node_cell_mapping() is deprecated. Use the \"node_cell_mapping\" property instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -692,10 +692,10 @@ class KuzuGraphWidget:
 
     def del_node_cell_mapping(self) -> None:
         """
-        Deprecated: Use the 'node_cell_mapping' property instead.
+        Deprecated: Use the "node_cell_mapping" property instead.
         """
         warnings.warn(
-            "del_node_cell_mapping() is deprecated. Use the 'node_cell_mapping' property instead.",
+            "del_node_cell_mapping() is deprecated. Use the \"node_cell_mapping\" property instead.",
             DeprecationWarning,
             stacklevel=2,
         )
