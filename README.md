@@ -1,4 +1,8 @@
 # yFiles Jupyter Graphs for Kuzu
+
+> [!NOTE]
+> KuzuDB has been discontinued. [LadybugDB](https://ladybugdb.com/) is one of its successors, and this widget also works with LadybugDB.
+
 ![A screenshot showing the yFiles graph widget for Kuzu in a jupyter lab notebook](https://raw.githubusercontent.com/yWorks/yfiles-jupyter-graphs-for-kuzu/kuzu/images/example.png)
 
 [![PyPI version](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu.svg)](https://badge.fury.io/py/yfiles-jupyter-graphs-for-kuzu)
