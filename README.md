@@ -80,10 +80,11 @@ The default behavior is to only show the nodes and relationships returned by the
 
 The Cypher queries are executed by the provided Kuzu driver. If you have not specified a driver when instantiating the
 class, you can set
-a connection afterward:
+a connection afterward. The connection is available as a property:
 
-- `set_connection(driver)`: Sets the Kuzu driver that is used to resolve the Cypher queries.
-- `get_connection()`: Returns the current Kuzu driver.
+```python
+widget.connection = connection
+```
 
 The graph visualization can be adjusted by adding configurations to each node label or edge type with the following
 functions:

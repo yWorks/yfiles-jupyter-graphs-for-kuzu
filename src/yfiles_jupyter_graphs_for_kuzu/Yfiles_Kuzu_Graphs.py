@@ -58,7 +58,7 @@ class KuzuGraphWidget:
         # Holds the most recent GraphWidget from show_cypher(); None until first call
         self._widget = None
 
-        self._connection = connection
+        self.connection = connection
         self._license = license
         self._overview = overview_enabled
         self._layout = widget_layout
@@ -69,15 +69,23 @@ class KuzuGraphWidget:
         self._edge_configurations = {}
         self._parent_configurations = set()
 
+    @property
+    def connection(self) -> Any:
+        """The configured Kuzu connection."""
+        return self._connection
+
+    @connection.setter
+    def connection(self, connection: Any) -> None:
+        """Sets the Kuzu connection used to resolve Cypher queries."""
+        self._connection = connection
+
     def set_connection(self, connection: Any) -> None:
         """
+        Legacy setter for the connection property.
+
+        Deprecated, use ``widget.connection = value`` instead.
+
         The Kuzu connection that is used to resolve the Cypher queries. A new session is created when set.
-
-        Args:
-            connection: The Kuzu connection to resolve the Cypher queries.
-
-        Returns:
-            None
         """
         warnings.warn(
             "set_connection() is deprecated. Use the \"connection\" property instead.",
@@ -88,10 +96,11 @@ class KuzuGraphWidget:
 
     def get_connection(self) -> Any:
         """
-        Gets the configured Kuzu connection.
+        Legacy getter for the connection property.
 
-        Returns:
-            kuzu connection
+        Deprecated, use ``widget.connection`` instead.
+
+        Gets the configured Kuzu connection.
         """
         warnings.warn(
             "get_connection() is deprecated. Use the \"connection\" property instead.",
@@ -99,19 +108,6 @@ class KuzuGraphWidget:
             stacklevel=2,
         )
         return self.connection
-
-    @property
-    def connection(self) -> Any:
-        """The configured Kuzu connection.
-
-        Preferred Pythonic accessor to the underlying connection. Equivalent to get_connection().
-        """
-        return self._connection
-
-    @connection.setter
-    def connection(self, value: Any) -> None:
-        """Sets the Kuzu connection used to resolve Cypher queries."""
-        self._connection = value
 
     @property
     def graph_widget(self) -> Optional[GraphWidget]:
